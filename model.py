@@ -139,6 +139,14 @@ class model():
             self.BOT = torch.nn.DataParallel(self.BOT)
             self.GEN = torch.nn.DataParallel(self.GEN)
 
+        print(torch.__version__)
+
+        print(torch.cuda.current_device())
+        print(torch.cuda.device(0))
+        print(torch.cuda.device_count())
+        print(torch.cuda.get_device_name(0))
+        print(torch.cuda.is_available())
+        print(torch.cuda.current_device())
         self.FAN.to('cuda').train()
         self.BOT.to('cuda').train()
         self.GEN.to('cuda').train()

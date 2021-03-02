@@ -1,7 +1,8 @@
 import inspect, torch, pickle, cv2, os, numpy as np, scipy.io as sio
 from torch.utils.data import Dataset
-from utils import process_image, crop, affine_trans
+from utils import process_image,process_custom_image, crop, affine_trans
 import math
+import numpy as np
 
 
 class SuperDB(Dataset):
@@ -29,6 +30,26 @@ class SuperDB(Dataset):
         image, points = self.collect(self, idx)
         nimg = len(image)
 
+        if self.db=='custom':
+          sample = dict.fromkeys(['Im', 'ImP', 'init_pts'], None)
+          flip = np.random.rand(1)[0] > 0.5 if self.flip else False  # flip both or none
+
+          for j in range(self.nimages):
+              out = process_custom_image(image=image[j % nimg],
+                                  points=points[j % nimg],
+                                  angle=(j+1)*self.angle,
+                                  flip=flip,
+                                  size=self.size,
+                                  tight=self.tight)
+              if j == 1:
+                  sample['Im'] = out['image']
+              else:
+                  sample['ImP'] = out['image']
+
+              sample['init_pts'] = self.init_pts
+              sample['M'] = np.zeros((3,2))
+        
+
         if not self.affine:
             sample = dict.fromkeys(['Im', 'ImP', 'init_pts'], None)
             flip = np.random.rand(1)[0] > 0.5 if self.flip else False  # flip both or none
@@ -47,6 +68,7 @@ class SuperDB(Dataset):
 
                 sample['init_pts'] = self.init_pts
                 sample['M'] = out['M'].astype(np.float32)
+                
         else: 
             tmp_angle = np.clip(np.random.randn(1) * self.angle, -40.0, 40.0) if self.angle > 0 else self.angle
             image, points, _ = affine_trans(image[0], points[0], tmp_angle)
@@ -91,6 +113,26 @@ def preparedb(self, db):
 
         init(self)
         setattr(self, 'collect', collect)
+    
+    if db == 'custom':
+      def init(self):
+        print('custom dataset')
+        import glob
+        names = glob.glob('manga_anime/*')
+        setattr(self, 'files', names)
+        setattr(self, 'len', len(names))
+  
+      def collect(self, idx):
+          path_to_img = self.files[idx]
+          #print(path_to_img)
+          image = cv2.cvtColor(cv2.imread(path_to_img), cv2.COLOR_BGR2RGB)
+          points = np.zeros((5,2))
+          return [image], [points]
+      
+      init(self)
+      setattr(self, 'collect', collect)
+    
+
 
     if 'AFLW' in db:
         def init(self):

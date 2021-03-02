@@ -168,6 +168,17 @@ def process_image(image,points,angle=0, flip=False, sigma=1,size=128, tight=16, 
 
     return output
 
+def process_custom_image(image,points,angle=0, flip=False, sigma=1,size=128, tight=16, hmsize=64):
+    output = dict.fromkeys(['image','points','M'])
+    if flip:
+        image = cv2.flip(image, 1)
+            
+    image = image/255.0
+    image = torch.from_numpy(image.swapaxes(2,1).swapaxes(1,0))
+    output['image'] = image.type_as(torch.FloatTensor())
+    output['points'] = np.floor(points)
+
+    return output
 
 def crop( image, landmarks , size, tight=8):
         delta_x = np.max(landmarks[:,0]) - np.min(landmarks[:,0])
